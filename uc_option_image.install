@@ -1,0 +1,57 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the uc_option_image module.
+ *
+ */
+
+
+/**
+ * Implements hook_install().
+ *   Adds default option image to file system.
+ */
+function uc_option_image_install() {
+  $uri = 'public://no_image.png';
+  $default_image_path = drupal_get_path('module', 'uc_option_image') . '/no_image.png';
+  $default_image_name = 'option_image_0_0_0';
+  $file_path = db_query("SELECT fid from {file_managed} WHERE filename = :filename AND uri = :uri", array(':filename' => $default_image_name, ':uri' => $uri))->fetchField();
+  // Make sure image doesn't already exist in the files table.
+  if (!$file_path) {
+    $info = image_get_info($default_image_path);
+    $file = (object) array(
+      'uid' => 1,
+      'filename' => $default_image_name,
+      'uri' => $uri,
+      'filemime' => $info['file_mime'],
+      'filesize' => $info['file_size'],
+      'status' => FILE_STATUS_PERMANENT,
+	  'timestamp' => time()
+    );
+    drupal_write_record('file_managed', $file);
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ *   Removes default option image to file system and variables.
+ */
+function uc_option_image_uninstall() {
+  // Remove default option image.
+  $default_image_path = drupal_get_path('module', 'uc_option_image') . '/no_image.png';
+  $default_image_name = 'option_image_0_0_0';
+  // TODO Please review the conversion of this statement to the D7 database API syntax.
+  /* db_query("DELETE FROM {files} WHERE filename = '%s' AND filepath = '%s'", $default_image_name, $default_image_path) */
+  db_delete('files')
+  ->condition('filename', $default_image_name)
+  ->condition('filepath', $default_image_path)
+  ->execute();
+
+  // Remove variables.
+  variable_del('uc_option_image_attributes');
+  variable_del('uc_option_image_effect');
+  variable_del('uc_option_image_js');
+  variable_del('uc_option_image_node_weight');
+  variable_del('uc_option_image_page_size');
+  variable_del('uc_option_image_preview_size');
+  variable_del('uc_option_image_teaser_size');
+}
