@@ -1,3 +1,5 @@
+(function($){
+
 var UCOI = UCOI || {};
 
 /**
@@ -83,8 +85,8 @@ UCOI.getAID = function(input) {
   return name.match(/attributes\[([0-9]+)\]/)[1]; 
 };
 
-if (Drupal.jsEnabled) {
   $(function(){
     UCOI.init();
   });
-}
+
+})(jQuery);

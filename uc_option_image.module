@@ -49,7 +49,6 @@ function uc_option_image_node_load($nodes, $types) {
     $page_size = variable_get('uc_option_image_page_size', 'preview');
     $enabled_attributes = variable_get('uc_option_image_attributes', array());
     foreach ($node->attributes as $attribute) {
-        /*
       if ($attribute->options && $enabled_attributes[$attribute->aid]) {
         foreach ($attribute->options as $option) {
           $file = uc_option_image_load($node->nid, $attribute->aid, $option->oid);
@@ -60,12 +59,11 @@ function uc_option_image_node_load($nodes, $types) {
               $node->option_images_cached[$option->oid] = imagecache_create_url($page_size, $file->uri);
             }
             else {
-              $node->option_images_cached[$option->oid] = $file->uri;
+              $node->option_images_cached[$option->oid] = file_create_url($file->uri);
             }
           }
         }
       }
-         */
     }
   }
   }
@@ -118,12 +116,10 @@ function uc_option_image_node_view($node, $view_mode = 'full') {
         array_unshift($node->attributes, $first_attribute);
         $page_size = variable_get('uc_option_image_page_size', 'preview');
         $teaser_size = variable_get('uc_option_image_teaser_size', 'thumbnail');
-        $size = $a4 ? $page_size : $teaser_size;
+        $size = $page_size; // : $teaser_size;
 
         // Pass attributes to uc_option_image to populate JS settings
-        if ($a4) {
-          uc_option_image($node, $attributes, $size);
-        }
+        uc_option_image($node, $attributes, $size);
 
         // Determine if we have a default option using
         // the first attribute's default option
@@ -136,22 +132,22 @@ function uc_option_image_node_view($node, $view_mode = 'full') {
 
         // Display the image based on teaser/page view
         // Ensure that original file exists
-        if ($file->filepath && file_exists($file->filepath)) {
-          // TODO Please change this theme call to use an associative array for the $variables parameter.
-          $image = theme('uc_option_image', $first_attribute->aid, $file, $size);
+        if ($file->uri) { //  && file_exists($file->filepath)) {
+          $image = theme('uc_option_image', array('aid' =>
+              $first_attribute->aid, 'file' => $file, 'size' => $size));
         }
         else {
           $image = theme('uc_option_image_no_image', array('node' => $node, 'size' => $size));
         }
 
         // Preload images
-        if ($a4) {
+//        if ($a4) {
           // TODO Please change this theme call to use an associative array for the $variables parameter.
-          $preloaded_images = theme('uc_option_image_preloaded', $first_attribute->aid, $node, $size);
-        }
+          $preloaded_images = theme('uc_option_image_preloaded', array('aid' => $first_attribute->aid, 'node' => $node, 'size' => $size));
+ //       }
 
         $node->content['option_image'] = array(
-                '#value' => $image . $preloaded_images,
+                '#markup' => $image . $preloaded_images,
                 '#access' => user_access('view option images'),
                 '#weight' => (int) variable_get('uc_option_image_node_weight', '10'),
               );
@@ -195,16 +191,17 @@ function uc_option_image_form_alter(&$form, &$form_state, $form_id) {
               if (!empty($file)) {
                 // TODO Please change this theme call to use an associative array for the $variables parameter.
 
-//XXX TODO: Display the existing images here.
-
                 $form['attributes'][$aid]['options'][$oid]['option_image_preview'] = array(
-                  '#markup' => ('<table><tr><td>' . $oid . '</td><td><img
-                  height=100 style="box-shadow: 3px 3px 10px 5px #aaa;" src="' . file_create_url($file->uri) . '" /></td><td>' .variable_get('uc_option_image_preview_size', '_original') .  '</td></tr></table>'),
-				  // theme('uc_option_image', $aid, $file, variable_get('uc_option_image_preview_size', '_original')),
+                  '#type' => 'markup',
+                  '#markup' => '<hr/>' . theme('uc_option_image', array(
+                    'aid' => $aid,
+                    'file' => $file,
+                    'size' => variable_get('uc_option_image_preview_size', '_original')
+                   )),
                 );
                 $form['attributes'][$aid]['options'][$oid][uc_option_image_id($nid, $aid, $oid)] = array(
                   '#type' => 'file',
-                  '#title' => t('Image'),
+                  '#title' => $form['attributes'][$aid]['options'][$oid]['select']['#title'],
                   '#name' => 'files[' . uc_option_image_id($nid, $aid, $oid) . ']',
                   '#size' => 8,
                   '#default_value' => $file->filename,
@@ -391,12 +388,12 @@ function uc_option_image($node, $attributes, $size = '_original') {
         foreach ($attribute->options as $oid => $option) {
           $file = uc_option_image_load($node->nid, $aid, $oid);
 
-          if ($file->filepath) {
+          if ($file->uri) {
             $data['images'][$node->nid][$aid][$oid] = array(
                 'nid' => $node->nid,
                 'aid' => $aid,
                 'oid' => $oid,
-                'filepath' => $file->filepath,
+                'uri' => $file->uri,
                 'derivative' => $node->option_images_cached[$oid],
               );
           }
@@ -509,7 +506,7 @@ function uc_option_image_delete($nid, $aid, $oid) {
 function uc_option_image_get_size_options() {
   $options = array('_original' => t('Original'));
   return $options;
-  // modified au
+  // XXX - TODO - work with image_styles !  modified au
   $presets = imagecache_presets();
 
   if (empty($presets)) {
@@ -618,8 +615,9 @@ function uc_option_image_theme() {
  *   Markup.
  */
 function theme_uc_option_image($variables) {
-  $aid = $variables['file'];
-  $file = $variables['size'];
+  $aid = $variables['aid'];
+  $file = $variables['file'];
+  $size = $variables['size'];
   // TODO Number of parameters in this theme funcion does not match number of parameters found in hook_theme.
   $shownoimage = TRUE;
 
@@ -628,7 +626,7 @@ function theme_uc_option_image($variables) {
     $shownoimage = FALSE;
   }
 
-  $info = pathinfo($file->filepath);
+  // $info = pathinfo($file->filepath);
   $attributes = array('class' => 'uc-option-image');
 
   // Display imagecache preset or the original image
@@ -636,12 +634,15 @@ function theme_uc_option_image($variables) {
 
   if ($shownoimage) {
     if ($size != '_original') {
+      $path = image_style_url($size, $file->uri);
       // TODO Please change this theme call to use an associative array for the $variables parameter.
-      $imagecache_image = theme('imagecache', $size, $file->filepath, NULL, NULL, $attributes);
     }
     else {
-      $imagecache_image =  theme('image', array('path' => $file->filepath, 'width' => NULL, 'height' => NULL, 'alt' => $attributes, 'title' => FALSE));
+      $path = file_create_url($file->uri);
     }
+      $imagecache_image = theme('image', array('path' =>
+      $path, 'width' => NULL, 'height' => NULL,
+      'attributes' => $attributes, 'title' => FALSE));
   }
 
   $option_image = '<div class="uc-option-image-block">' . $imagecache_image . '</div>';
@@ -662,14 +663,15 @@ function theme_uc_option_image($variables) {
  *   Markup.
  */
 function theme_uc_option_image_preloaded($variables) {
-  $aid = $variables['node'];
-  $node = $variables['size'];
+  $aid = $variables['aid'];
+  $node = $variables['node'];
+  $size = $variables['size'];
   // TODO Number of parameters in this theme funcion does not match number of parameters found in hook_theme.
   $output = '<div id="uc-option-image-preloaded-' . $node->nid . '" class="uc-option-image-preloaded" style="display: none;">';
 
   foreach ((array) $node->option_images as $i => $option_image) {
     // TODO Please change this theme call to use an associative array for the $variables parameter.
-    $output .= theme('uc_option_image', $aid, $option_image, $size);
+    $output .= theme('uc_option_image', array('aid' => $aid, 'file' => $option_image, 'size' => $size));
   }
 
   $output .= theme('uc_option_image_no_image', array('node' => $node, 'size' => $size));
