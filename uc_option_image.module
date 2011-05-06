@@ -123,12 +123,55 @@ function uc_option_image_node_view($node, $view_mode = 'full') {
   }
 }
 
+function uc_option_image_colorbox($name) {
+  if (variable_get('uc_option_image_attributes_colorpicker', FALSE)) {
+    return "<div style='width: 24px; height: 24px; margin-left: 24px; border: 1px solid #888; background: #$name'>&nbsp;</div>";
+  }
+  else {
+      return $name;
+  }
+}
+
 /**
  * Implements hook_form_alter();().
  */
 function uc_option_image_form_alter(&$form, &$form_state, $form_id) {
   switch ($form_id) {
     // Attribute options form
+    case 'uc_attribute_options_form':
+      if (!variable_get('uc_option_image_attributes_colorpicker', FALSE)) {
+        return;
+      }
+      $aid = $form['aid']['#value'];
+      $attributes = variable_get('uc_option_image_attributes', '');
+      if (isset($attributes[$aid]) && !$attributes[$aid]) {
+        return;
+      }
+      if ($oids = element_children($form['options'])) {
+        foreach ($oids as $oid) {
+          $form['options'][$oid]['name']['#markup'] = uc_option_image_colorbox(
+            $form['options'][$oid]['name']['#markup']
+          );
+        }
+      }
+      break;
+    case 'uc_attribute_option_form':
+      if (!variable_get('uc_option_image_attributes_colorpicker', FALSE)) {
+        return;
+      }
+      $aid = $form['aid']['#value'];
+      $attributes = variable_get('uc_option_image_attributes', '');
+      if (isset($attributes[$aid]) && !$attributes[$aid]) {
+        return;
+      }
+      $form['name'] = array(
+        '#type' => 'jquery_colorpicker',
+        '#title' => t('Color'),
+        '#description' => t('Used for displaying the color box for user selection'),
+        '#default_value' => $form['name']['#default_value'],
+        '#weight' => 3,
+      );
+
     case 'uc_object_options_form':
       // Make sure we are a node's options page
       if (!is_numeric(arg(1)) && arg(0) != 'node') {
@@ -153,21 +196,47 @@ function uc_option_image_form_alter(&$form, &$form_state, $form_id) {
               if (!empty($file)) {
                 // TODO Please change this theme call to use an associative array for the $variables parameter.
 
-                $form['attributes'][$aid]['options'][$oid]['option_image_preview'] = array(
+                $form['attributes'][$aid]['options'][$oid]['option_image_preview_begin'] = array(
                   '#type' => 'markup',
-                  '#markup' => '<hr/>' . theme('uc_option_image', array(
-                    'aid' => $aid,
-                    'file' => $file,
-                    'size' => variable_get('uc_option_image_preview_size', '_original')
-                   )),
+                  '#markup' => '<table><tr><td width="40">' .
+                  uc_option_image_colorbox($form['attributes'][$aid]['options'][$oid]['select']['#title'])
+                  . '</td><td>',
                 );
                 $form['attributes'][$aid]['options'][$oid][uc_option_image_id($nid, $aid, $oid)] = array(
                   '#type' => 'file',
-                  '#title' => $form['attributes'][$aid]['options'][$oid]['select']['#title'],
+                  '#title' => '', // $form['attributes'][$aid]['options'][$oid]['select']['#title'],
                   '#name' => 'files[' . uc_option_image_id($nid, $aid, $oid) . ']',
                   '#size' => 8,
                   '#default_value' => $file->filename,
                 );
+                $form['attributes'][$aid]['options'][$oid]['option_image_preview_end'] = array(
+                  '#type' => 'markup',
+                  '#markup' => '</td><td>' . theme('uc_option_image', array(
+                    'aid' => $aid,
+                    'file' => $file,
+                    'size' => variable_get('uc_option_image_preview_size', '_original')
+                   )) . "</td></tr></table>",
+                );
+
+                if (variable_get('uc_option_image_attributes_colorpicker', FALSE)) {
+                    $form['cleanup'] = array(
+                          '#type' => 'markup',
+                          '#markup' =>
+                          '<script>jQuery("label.option").each(function(){
+                              jQuery(this).prev().css("float", "left");
+                              jQuery(this).html(
+                                  jQuery("<div />", { css: {
+                                    width: "24px",
+                                    height: "24px",
+                                    float: "left",
+                                    marginLeft: "24px",
+                                    border: "1px solid #888",
+                                    background: "#" + jQuery(this).text()
+                                  } })
+                              );
+                          })</script>',
+                    );
+                }
               }
             }
           }
@@ -216,6 +285,12 @@ function uc_option_image_form_alter(&$form, &$form_state, $form_id) {
             '#options' => $attribute_options,
             '#default_value' => variable_get('uc_option_image_attributes', array()),
           );
+          $form['uc_option_image']['uc_option_image_attributes_colorpicker'] = array(
+              '#type' => 'checkbox',
+              '#title' => t('Use Color Picker for Switched Attributes?'),
+              '#description' => t('Render Attribute Names as Color Pickers.'),
+              '#default_value' => variable_get('uc_option_image_attributes_colorpicker', FALSE),
+            );
       }
       $form['uc_option_image']['uc_option_image_effect'] = array(
           '#type' => 'select',
@@ -269,7 +344,8 @@ function uc_option_image_form_uc_cart_view_form_alter(&$form, &$form_state) {
   $imageAttributes            = variable_get('uc_option_image_attributes', '');
   $attributesSameForAllImages = variable_get('uc_option_image_same_image', '');
 
-  foreach ($form['#parameters'][2] as $itemId => $cartItem) {
+  foreach ($form['items'] as $itemId => $cartItem) {
+    if (!is_object($cartItem)) { continue; }
     $nid = $cartItem->nid;
 
     // FIXME: How should we handle more than one attribute with an image? Currently, the last one will take precedence...
@@ -334,6 +410,7 @@ function uc_option_image($node, $attributes, $size = '_original') {
     $data['noimage'] = theme('uc_option_image_no_image_path', array('node' => $node, 'size' => $size));
     $data['attributes'] = variable_get('uc_option_image_attributes', '');
     $data['nodeid'] = $node->nid;
+    $data['uc_option_image_attributes_colorpicker'] = variable_get('uc_option_image_attributes_colorpicker', FALSE);
 
     $prep = TRUE;
   }

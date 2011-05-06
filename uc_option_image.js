@@ -27,6 +27,34 @@ UCOI.init = function() {
       UCOI.switchImage(aid, this, size);  
     }
   });
+
+  var self = this;
+  if (Drupal.settings.UCOI.uc_option_image_attributes_colorpicker) {
+      $('.add-to-cart .form-radios input').each(function(){
+        if (aid = UCOI.getAID(this)){
+            if (!self.attributes[aid]) { return; }
+
+            var $label = $(this).next('label');
+            if (!$label.length) { return; }
+            var color;
+            $label.text($label.text().replace(/^\s*([\da-fA-F]+)(?:,\s*)?/, function($0, $1) {
+                color = $1;
+                return '';
+            }));
+            if (color) {
+              $(this).css('float', 'left');
+              $("<div />", { css: {
+                width: "24px",
+                height: "24px",
+                marginLeft: "12px",
+                float: 'left',
+                border: "1px solid #888",
+                background: "#" + color
+              } }).prependTo($label);
+            }
+        }
+      });
+  }
 };
 
 /**
