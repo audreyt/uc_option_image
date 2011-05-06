@@ -68,38 +68,6 @@ function uc_option_image_node_load($nodes, $types) {
   }
   }
   return;
-  // isis modified
- // $result = db_query('SELECT nid FROM uc_products WHERE nid IN(:nids)', array(':nids' => array_keys($node)));
-//  foreach ($result as $record) {
-//	$node[$record->nid]->option_images = array();
-//    $node[$record->nid]->option_images_cached = array();
-//    $node[$record->nid]->attributes = uc_product_get_attributes($node[$record->nid]->nid);
-//	
-//	 if ($node[$record->nid]->attributes) {
-//    $page_size = variable_get('uc_option_image_page_size', 'preview');
-//    $enabled_attributes = variable_get('uc_option_image_attributes', array());
-//    foreach ($node[$record->nid]->attributes as $attribute) {
-//      if ($attribute->options && $enabled_attributes[$attribute->aid]) {
-//        foreach ($attribute->options as $option) {
-//          $file = uc_option_image_load($node->nid, $attribute->aid, $option->oid);
-//          if ($file && $file->filepath) {
-//            $node[$record->nid]->option_images[] = $file;
-//            // Load imagecached option images
-//            if ($page_size != '_original') {
-//              $node[$record->nid]->option_images_cached[$option->oid] = imagecache_create_url($page_size, $file->filepath);
-//            }
-//            else {
-//              $node[$record->nid]->option_images_cached[$option->oid] = $file->filepath;
-//            }
-//          }
-//        }
-//      }
-//    }
-//  }
-//  
-//  }
-  
-
 }
 
 /**
