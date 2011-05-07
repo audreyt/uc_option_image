@@ -36,11 +36,8 @@ UCOI.init = function() {
 
             var $label = $(this).next('label');
             if (!$label.length) { return; }
-            var color;
-            $label.text($label.text().replace(/^\s*([\da-fA-F]+)(?:,\s*)?/, function($0, $1) {
-                color = $1;
-                return '';
-            }));
+            var oid = $(this).val();
+            var color = Drupal.settings.UCOI.images[self.nodeid][aid][oid].color;
             if (color) {
               $(this).css('float', 'left');
               $("<div />", { css: {
@@ -49,7 +46,7 @@ UCOI.init = function() {
                 marginLeft: "12px",
                 float: 'left',
                 border: "1px solid #888",
-                background: "#" + color
+                background: color
               } }).prependTo($label);
             }
         }
