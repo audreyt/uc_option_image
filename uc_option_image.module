@@ -152,7 +152,7 @@ function uc_option_image_form_alter(&$form, &$form_state, $form_id) {
       }
       if ($oids = element_children($form['options'])) {
         foreach ($oids as $oid) {
-            var_dump($form['options'][$oid]['weight']['#markup']);
+          //  var_dump($form['options'][$oid]['weight']['#markup']);
           $form['options'][$oid]['weight']['#markup'] = uc_option_image_colorbox(
             $form['options'][$oid]['weight']['#markup']
           );
@@ -236,7 +236,8 @@ function uc_option_image_form_alter(&$form, &$form_state, $form_id) {
       break;
 
       // Attribute settings form
-    case 'uc_attribute_admin_settings':
+    #case 'uc_attribute_admin_settings':
+    case 'uc_product_settings_form':
       if (!user_access('administer option images')) {
         break;
       }
@@ -258,6 +259,7 @@ function uc_option_image_form_alter(&$form, &$form_state, $form_id) {
       $form['uc_option_image'] = array(
           '#type' => 'fieldset',
           '#title' => t('Option Images'),
+          '#group' => 'product-settings',
         );
       $form['uc_option_image']['uc_option_image_js'] = array(
           '#type' => 'checkbox',
