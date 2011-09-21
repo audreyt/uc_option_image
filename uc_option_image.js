@@ -49,6 +49,10 @@ UCOI.init = function() {
                 background: color
               } }).prependTo($label);
             }
+
+         if ($(this).is(':checked')) {
+           UCOI.switchImage(aid, this, size);  
+         }
         }
       });
   }
@@ -61,6 +65,9 @@ UCOI.switchImage = function(aid, input, size) {
   var nid = this.nodeid;
   var oid = $(input).val(); 
   var image =  $(':not(.uc-option-image-preloaded) > div.uc-option-image-block').children('img.uc-option-image');
+  if (image.length == 0) {
+    image = $('.main-product-image img');
+  }
           
   // Make sure we have permission to switch this attribute
   if (this.attributes[aid] == 0){
@@ -77,6 +84,9 @@ UCOI.switchImage = function(aid, input, size) {
       this.switchImageEffect(image, images[oid]);
     } else if (image[0] == null) {
        parentImage = $(':not(.uc-option-image-preloaded) > div.uc-option-image-block');
+       if (parentImage.length == 0) {
+           parentImage = $('.main-product-image');
+       }
        parentImage[0].innerHTML = "<img src=\""+images[oid].derivative+"\" class=\"uc-option-image\">";
     }
   }
@@ -89,6 +99,7 @@ UCOI.switchImage = function(aid, input, size) {
  * Switch the imagepath based on the selected effect.
  */
 UCOI.switchImageEffect = function(image, imageproperty) {
+  $(image).parent('a').attr('href', imageproperty.derivative);
 
   switch(this.effect){
     case 'fade':

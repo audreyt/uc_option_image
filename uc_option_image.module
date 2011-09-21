@@ -93,13 +93,16 @@ function uc_option_image_node_view($node, $view_mode = 'full') {
         if ($first_attribute->default_option) {
           $default_option = $first_attribute->default_option;
         }
+        else {
+          $default_option = '';
+        }
 
         // Load the default image file
         $file = uc_option_image_load($node->nid, $first_attribute->aid, $default_option);
 
         // Display the image based on teaser/page view
         // Ensure that original file exists
-        if ($file->uri) { //  && file_exists($file->filepath)) {
+        if ($file && $file->uri) { //  && file_exists($file->filepath)) {
           $image = theme('uc_option_image', array('aid' =>
               $first_attribute->aid, 'file' => $file, 'size' => $size));
         }
@@ -460,6 +463,9 @@ function uc_option_image_load($nid, $aid, $oid) {
         }
       }
   }
+    if (empty($files[$filename])) {
+return '';
+}
   return $files[$filename];
 }
 
