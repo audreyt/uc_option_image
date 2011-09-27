@@ -51,7 +51,8 @@ UCOI.init = function() {
             }
 
          if ($(this).is(':checked')) {
-           UCOI.switchImage(aid, this, size);  
+		UCOI.switchImage(aid, this, size);
+		// $(this).prop('checked', false);
          }
         }
       });
@@ -66,7 +67,7 @@ UCOI.switchImage = function(aid, input, size) {
   var oid = $(input).val(); 
   var image =  $(':not(.uc-option-image-preloaded) > div.uc-option-image-block').children('img.uc-option-image');
   if (image.length == 0) {
-    image = $('.main-product-image img');
+//    image = $('.main-product-image img');
   }
           
   // Make sure we have permission to switch this attribute
@@ -85,7 +86,7 @@ UCOI.switchImage = function(aid, input, size) {
     } else if (image[0] == null) {
        parentImage = $(':not(.uc-option-image-preloaded) > div.uc-option-image-block');
        if (parentImage.length == 0) {
-           parentImage = $('.main-product-image');
+//           parentImage = $('.main-product-image');
        }
        parentImage[0].innerHTML = "<img src=\""+images[oid].derivative+"\" class=\"uc-option-image\">";
     }
