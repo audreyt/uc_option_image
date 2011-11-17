@@ -30,6 +30,9 @@ UCOI.init = function() {
 
   var self = this;
   if (Drupal.settings.UCOI.uc_option_image_attributes_colorpicker) {
+      if ($('.add-to-cart .form-radios input:checked').length == 0) {
+          $('.add-to-cart .form-radios input:first').attr('checked', true).triggerHandler('change');
+      }
       $('.add-to-cart .form-radios input').each(function(){
         if (aid = UCOI.getAID(this)){
             if (!self.attributes[aid]) { return; }
